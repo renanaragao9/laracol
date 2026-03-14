@@ -69,10 +69,22 @@ RUN mkdir -p /app/storage/logs && \
     chmod 755 /app/bin/api 2>/dev/null || true && \
     chmod 755 /var/www/html 2>/dev/null || true
 
-# Copiar configuração do Apache
-COPY docker/laracol.conf /etc/apache2/sites-available/laracol.conf
+# Configurar Apache para CGI (usando tee)
+RUN cat > /etc/apache2/sites-available/laracol.conf << 'EOF'
+<VirtualHost *:80>
+ServerName localhost
+DocumentRoot /var/www/html
+<Directory /var/www/html>
+Options +ExecCGI +FollowSymLinks
+AddHandler cgi-script .cgi
+AllowOverride All
+Require all granted
+</Directory>
+ErrorLog ${APACHE_LOG_DIR}/error.log
+CustomLog ${APACHE_LOG_DIR}/access.log combined
+</VirtualHost>
+EOF
 
-# Configurar Apache para CGI
 RUN a2dissite 000-default && \
     a2ensite laracol.conf
 
