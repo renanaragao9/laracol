@@ -69,18 +69,11 @@ RUN mkdir -p /app/storage/logs && \
     chmod 755 /app/bin/api 2>/dev/null || true && \
     chmod 755 /var/www/html 2>/dev/null || true
 
+# Copiar configuração do Apache
+COPY docker/laracol.conf /etc/apache2/sites-available/laracol.conf
+
 # Configurar Apache para CGI
-RUN echo '<VirtualHost *:80>' > /etc/apache2/sites-available/laracol.conf && \
-    echo '  ServerName localhost' >> /etc/apache2/sites-available/laracol.conf && \
-    echo '  DocumentRoot /var/www/html' >> /etc/apache2/sites-available/laracol.conf && \
-    echo '  <Directory /var/www/html>' >> /etc/apache2/sites-available/laracol.conf && \
-    echo '    Options +ExecCGI +FollowSymLinks' >> /etc/apache2/sites-available/laracol.conf && \
-    echo '    AddHandler cgi-script .cgi' >> /etc/apache2/sites-available/laracol.conf && \
-    echo '    AllowOverride All' >> /etc/apache2/sites-available/laracol.conf && \
-    echo '    Require all granted' >> /etc/apache2/sites-available/laracol.conf && \
-    echo '  </Directory>' >> /etc/apache2/sites-available/laracol.conf && \
-    echo '</VirtualHost>' && \
-    a2dissite 000-default && \
+RUN a2dissite 000-default && \
     a2ensite laracol.conf
 
 # Expor porta
