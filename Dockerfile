@@ -41,59 +41,38 @@ RUN apt-get update && \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar runtime e servidor web
+# Instalar runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnucobol \
     libdb5.3 \
-    apache2 \
+    python3 \
     curl \
     && rm -rf /var/lib/apt/lists/*
-
-# Habilitar módulos Apache necessários
-RUN a2enmod cgi && \
-    a2enmod rewrite && \
-    a2enmod headers || true
 
 # Diretório de trabalho
 WORKDIR /app
 
 # Copiar aplicação compilada do builder
 COPY --from=builder /app/bin /app/bin
-COPY --from=builder /app/public /var/www/html
-
-# Copiar arquivo de configuração do Apache
+COPY --from=builder /app/public /app/public
 COPY --from=builder /app/config /app/config
+COPY --from=builder /app/bootstrap /app/bootstrap
+COPY --from=builder /app/app /app/app
+COPY --from=builder /app/routes /app/routes
+COPY --from=builder /app/storage /app/storage
+COPY --from=builder /app/laracol /app/laracol
 
 # Criar diretórios essenciais
 RUN mkdir -p /app/storage/logs && \
-    chmod 755 /app/bin/api 2>/dev/null || true && \
-    chmod 755 /var/www/html 2>/dev/null || true
-
-# Configurar Apache para CGI (usando tee)
-RUN cat > /etc/apache2/sites-available/laracol.conf << 'EOF'
-<VirtualHost *:80>
-ServerName localhost
-DocumentRoot /var/www/html
-<Directory /var/www/html>
-Options +ExecCGI +FollowSymLinks
-AddHandler cgi-script .cgi
-AllowOverride All
-Require all granted
-</Directory>
-ErrorLog ${APACHE_LOG_DIR}/error.log
-CustomLog ${APACHE_LOG_DIR}/access.log combined
-</VirtualHost>
-EOF
-
-RUN a2dissite 000-default && \
-    a2ensite laracol.conf
+    chmod 755 /app/bin/api && \
+    chmod 755 /app/laracol
 
 # Expor porta
-EXPOSE 80
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+    CMD curl -f http://localhost:8000/ || exit 1
 
-# Iniciar Apache
-CMD ["apache2ctl", "-D", "FOREGROUND"]
+# Iniciar servidor Laracol
+CMD ["./laracol", "serve", "8000"]
