@@ -1,0 +1,31 @@
+# Arquivos e diretórios ignorados
+bin/
+storage/logs/*
+storage/app/*
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Database (exceto schema)
+*.db-journal
+
+# Environment
+.env
+.env.local
+
+# Compiláveis
+*.o
+*.so
+*.exe
+
+# Dependências
+node_modules/
+vendor/

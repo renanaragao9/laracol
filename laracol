@@ -1,0 +1,390 @@
+#!/bin/bash
+
+# Laracol - CLI para gerenciar o Framework Laracol
+# Uso: ./laracol [comando]
+
+set -e
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Versão
+VERSION="1.0.0"
+APP_NAME="Laracol Framework"
+
+print_header() {
+    echo -e "${BLUE}╔════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║${NC}  $1"
+    echo -e "${BLUE}╚════════════════════════════════════════╝${NC}"
+}
+
+print_success() {
+    echo -e "${GREEN}✓${NC} $1"
+}
+
+print_error() {
+    echo -e "${RED}✗${NC} $1"
+}
+
+print_info() {
+    echo -e "${YELLOW}ℹ${NC} $1"
+}
+
+# Funcionalidades
+
+serve() {
+    local HOST="127.0.0.1"
+    local PORT="${1:-8000}"
+    local CLEAN_BUILD=0
+    
+    # Verificar se a flag --clean foi passada
+    if [[ "$2" == "--clean" ]] || [[ "$2" == "-c" ]]; then
+        CLEAN_BUILD=1
+    fi
+    
+    print_header "Starting Laracol Development Server"
+    
+    # Clean build if requested
+    if [ $CLEAN_BUILD -eq 1 ]; then
+        if [ -f "bin/api" ]; then
+            print_info "Removing previous build..."
+            rm -f bin/api
+        fi
+    fi
+    
+    # Build if necessary
+    if [ ! -f "bin/api" ]; then
+        print_info "Compiling application..."
+        make build > /dev/null 2>&1
+        print_success "Application compiled successfully"
+    else
+        print_info "Using existing binary"
+    fi
+    
+    # Create server with CGI
+    print_info "Starting server at http://${HOST}:${PORT}"
+    print_info "Press Ctrl+C to stop"
+    echo ""
+    
+    # Use Python or socat server
+    if command -v python3 &> /dev/null; then
+        create_cgi_server "$PORT"
+    elif command -v socat &> /dev/null; then
+        create_socat_server "$HOST" "$PORT"
+    else
+        print_error "No server available. Install python3 or socat."
+        echo "sudo apt install python3"
+        exit 1
+    fi
+}
+
+create_cgi_server() {
+    local PORT=$1
+    local COBOL_DIR="$SCRIPT_DIR"
+    
+    # Criar arquivo CGI wrapper
+    cat > "/tmp/cobol_cgi_wrapper.py" << 'PYTHONEOF'
+#!/usr/bin/env python3
+import os
+import sys
+import subprocess
+import json
+from http.server import HTTPServer, CGIHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+
+COBOL_DIR = os.environ.get('COBOL_DIR', os.getcwd())
+
+class CobolCGIHandler(CGIHTTPRequestHandler):
+    cgi_directories = ['/']
+    
+    def do_GET(self):
+        parse = urlparse(self.path)
+        path = parse.path
+        
+        if path.startswith('/api/'):
+            self.handle_cobol_request('GET', path)
+        else:
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            
+            html = '''
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>COBOL REST API</title>
+                <style>
+                    body { font-family: sans-serif; margin: 40px; }
+                    .header { color: #0066cc; }
+                    .endpoint { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+                    code { background: #e0e0e0; padding: 2px 5px; }
+                </style>
+            </head>
+            <body>
+                <h1 class="header">🔵 COBOL REST API v1.0</h1>
+                <p>Server running successfully!</p>
+                
+                <h2>Available Endpoints:</h2>
+                <div class="endpoint">
+                    <code>GET /api/health</code><br>
+                    Application health status
+                </div>
+                
+                <h2>Quick Test:</h2>
+                <pre>
+curl -X GET http://localhost:8000/api/health
+                </pre>
+            </body>
+            </html>
+            '''
+            self.wfile.write(html.encode())
+    
+    def do_POST(self):
+        parse = urlparse(self.path)
+        path = parse.path
+        
+        if path.startswith('/api/'):
+            self.handle_cobol_request('POST', path)
+        else:
+            self.send_error(404)
+    
+    def handle_cobol_request(self, method, path):
+        try:
+            # Ler body se POST
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(content_length).decode()
+            
+            # Preparar ambiente
+            env = os.environ.copy()
+            env['REQUEST_METHOD'] = method
+            env['PATH_INFO'] = path
+            env['QUERY_STRING'] = urlparse(self.path).query
+            env['CONTENT_LENGTH'] = str(content_length)
+            env['CONTENT_TYPE'] = self.headers.get('Content-Type', 'application/x-www-form-urlencoded')
+            
+            # Caminho para binário COBOL
+            api_path = os.path.join(COBOL_DIR, 'bin', 'api')
+            
+            # Executar binário COBOL
+            proc = subprocess.Popen(
+                [api_path],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env,
+                cwd=COBOL_DIR
+            )
+            
+            stdout, stderr = proc.communicate(input=body.encode() if body else b'')
+            
+            # Parse output - o binário retorna headers e body separados por dupla quebra de linha
+            output = stdout.decode('utf-8', errors='ignore')
+            
+            # Dividir headers e body
+            try:
+                # O COBOL escreve: Content-Type: ...\n \n{json}
+                # Procurar pela primeira linha vazia
+                lines = output.split('\n')
+                header_end = -1
+                for i, line in enumerate(lines):
+                    if i > 0 and line.strip() == '':
+                        header_end = i
+                        break
+                
+                if header_end > 0:
+                    # Tem headers
+                    body_text = '\n'.join(lines[header_end+1:]).strip()
+                else:
+                    # Sem headers, tudo é body
+                    body_text = output.strip()
+                
+                # Se body_text começar com "Content-Type", remove tudo até o JSON
+                if 'Content-Type' in body_text:
+                    # Procurar por { ou [
+                    for i, c in enumerate(body_text):
+                        if c in '{[':
+                            body_text = body_text[i:]
+                            break
+                
+            except Exception:
+                body_text = output.strip()
+            
+            # Enviar resposta
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.end_headers()
+            
+            # Escrever apenas o JSON
+            self.wfile.write(body_text.encode())
+            
+        except Exception as e:
+            self.send_error(500, str(e))
+    
+    def log_message(self, format, *args):
+        # Log customizado
+        print(f"[{self.log_date_time_string()}] {format % args}")
+
+if __name__ == '__main__':
+    cobol_dir = os.environ.get('COBOL_DIR', os.getcwd())
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8000
+    
+    # Mudar para diretório COBOL
+    os.chdir(cobol_dir)
+    
+    server = HTTPServer(('127.0.0.1', port), CobolCGIHandler)
+    print(f"Servidor rodando em http://127.0.0.1:{port}")
+    print("Pressione Ctrl+C para parar")
+    server.serve_forever()
+PYTHONEOF
+    
+    # Executar servidor com variável de ambiente
+    COBOL_DIR="$COBOL_DIR" python3 "/tmp/cobol_cgi_wrapper.py" "$PORT"
+    rm -f "/tmp/cobol_cgi_wrapper.py"
+}
+
+create_socat_server() {
+    local HOST=$1
+    local PORT=$2
+    
+    socat TCP-LISTEN:${PORT},reuseaddr,fork EXEC:"./bin/api"
+}
+
+build() {
+    print_header "Building Application"
+    make build
+    print_success "Build completed successfully"
+}
+
+tinker() {
+    print_header "COBOL Interactive Shell"
+    print_info "Interactive shell (WIP)"
+    echo "Exiting..."
+}
+
+database() {
+    local SUBCOMMAND=$1
+    
+    case "$SUBCOMMAND" in
+        migrate)
+            print_header "Running Migrations"
+            print_info "No migrations available"
+            ;;
+        seed)
+            print_header "Seeding Database"
+            print_info "Seeding feature not implemented yet"
+            ;;
+        reset)
+            print_header "Resetting Database"
+            print_info "No database to reset"
+            ;;
+        *)
+            print_error "Unknown command: database $SUBCOMMAND"
+            echo "Available subcommands: migrate, seed, reset"
+            ;;
+    esac
+}
+
+test_api() {
+    print_header "Testing API"
+    
+    if [ ! -f "bin/api" ]; then
+        print_error "Binary not found. Run: ./cobol build"
+        exit 1
+    fi
+    
+    print_info "Testing GET /api/health..."
+    REQUEST_METHOD="GET" PATH_INFO="/api/health" ./bin/api
+    
+    echo ""
+    print_success "Tests completed"
+}
+
+show_help() {
+    cat << EOF
+${BLUE}╔════════════════════════════════════════╗${NC}
+${BLUE}║${NC}  $APP_NAME v$VERSION
+${BLUE}╚════════════════════════════════════════╝${NC}
+
+${YELLOW}Usage:${NC}
+  ./laracol [command] [options]
+
+${YELLOW}Commands:${NC}
+  serve [port] [flags]  Start development server (default: 8000)
+  build                 Compile application
+  test                  Run API tests
+  make:controller       Create new controller
+  make:model            Create new model
+  tinker                Interactive shell (WIP)
+  database <cmd>        Manage database
+  clean                 Remove compiled files
+  help                  Show this help
+  version               Show version
+
+${YELLOW}Serve Flags:${NC}
+  --clean, -c           Force recompile even if binary exists
+
+${YELLOW}Examples:${NC}
+  ./laracol serve                    # Start on localhost:8000
+  ./laracol serve 3000              # Start on localhost:3000
+  ./laracol serve 8000 --clean      # Force recompile
+  ./laracol build                   # Compile
+  ./laracol make:controller Users   # Create UsersController
+  ./laracol database migrate        # Create/reset database
+  ./laracol test                    # Test endpoints
+  ./laracol database reset          # Clear database
+
+${YELLOW}Database Commands:${NC}
+  migrate               Run migrations
+  seed                  Populate initial data
+  reset                 Reset database
+
+EOF
+}
+
+show_version() {
+    echo "$APP_NAME v$VERSION"
+}
+
+# Parse command
+COMMAND="${1:-help}"
+
+case "$COMMAND" in
+    serve)
+        serve "${2:-8000}" "$3"
+        ;;
+    build)
+        build
+        ;;
+    test)
+        test_api
+        ;;
+    tinker)
+        tinker
+        ;;
+    database)
+        database "$2"
+        ;;
+    clean)
+        make clean
+        ;;
+    help)
+        show_help
+        ;;
+    version)
+        show_version
+        ;;
+    *)
+        print_error "Unknown command: $COMMAND"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac

@@ -1,0 +1,29 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. COBOLAPI.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+
+       01 APP-VERSION PIC X(10) VALUE "1.0.0".
+       01 APP-NAME PIC X(50) VALUE "Laracol Framework".
+       01 APP-ENVIRONMENT PIC X(20) VALUE "development".
+
+       PROCEDURE DIVISION.
+
+           PERFORM INITIALIZE-APP
+
+           CALL "APIROUTER"
+
+           PERFORM SHUTDOWN-APP
+
+           STOP RUN.
+
+       INITIALIZE-APP.
+           PERFORM LOAD-CONFIGURATION.
+
+       LOAD-CONFIGURATION.
+           ACCEPT APP-ENVIRONMENT FROM ENVIRONMENT "APP_ENV".
+
+       SHUTDOWN-APP.
+      *>    Log da aplicação ao desligar
+           CONTINUE.

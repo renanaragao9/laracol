@@ -1,0 +1,26 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Remove a extensão .cgi do arquivo de entrada
+    RewriteBase /
+    
+    # Redireciona tudo para index.cgi, exceto arquivos existentes
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ /index.cgi [L,QSA]
+</IfModule>
+
+# Permitir acesso ao CGI
+AddType application/x-httpd-cgi .cbi
+AddHandler cgi-script .cegi .cgi
+
+# Segurança - Negar acesso a arquivos sensíveis
+<Files ~ "\.conf$|\.sql$|\.cbl$">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# CORS Headers (opcional)
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type"

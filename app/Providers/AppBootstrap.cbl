@@ -1,0 +1,28 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. APPBOOTSTRAP.
+
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+
+       01 CONFIG-FILE PIC X(50) VALUE "config/app.conf".
+       01 DB-FILE PIC X(50) VALUE "database/app.db".
+
+       PROCEDURE DIVISION.
+
+           PERFORM BOOTSTRAP
+
+           GOBACK.
+
+       BOOTSTRAP.
+           PERFORM LOAD-CONFIG
+           PERFORM VERIFY-DATABASE
+           PERFORM INITIALIZE-SERVICES.
+
+       LOAD-CONFIG.
+           CONTINUE.
+
+       VERIFY-DATABASE.
+           CONTINUE.
+
+       INITIALIZE-SERVICES.
+           CONTINUE.
