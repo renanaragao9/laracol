@@ -1,16 +1,23 @@
 # Stage 1: Build
-FROM debian:bullseye-slim as builder
+FROM debian:bookworm-slim as builder
 
 LABEL maintainer="Dev Team"
 LABEL description="Laracol Framework - API REST em COBOL"
 
+# Fix repositórios e atualizar
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Instalar dependências de build
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gnucobol \
     make \
     curl \
     git \
     build-essential \
+    libdb-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Definir diretório de trabalho
@@ -23,23 +30,29 @@ COPY . .
 RUN make clean && make build
 
 # Stage 2: Runtime
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 LABEL maintainer="Dev Team"
 LABEL description="Laracol Framework - Runtime"
 
+# Fix repositórios e atualizar
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
 # Instalar runtime e servidor web
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gnucobol \
+    libdb5.3 \
     apache2 \
-    apache2-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Habilitar módulos Apache necessários
 RUN a2enmod cgi && \
     a2enmod rewrite && \
-    a2enmod headers
+    a2enmod headers || true
 
 # Diretório de trabalho
 WORKDIR /app
@@ -53,8 +66,8 @@ COPY --from=builder /app/config /app/config
 
 # Criar diretórios essenciais
 RUN mkdir -p /app/storage/logs && \
-    chmod 755 /app/bin/api && \
-    chmod 755 /var/www/html
+    chmod 755 /app/bin/api 2>/dev/null || true && \
+    chmod 755 /var/www/html 2>/dev/null || true
 
 # Configurar Apache para CGI
 RUN echo '<VirtualHost *:80>' > /etc/apache2/sites-available/laracol.conf && \
