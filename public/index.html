@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laracol — Framework Web em COBOL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0d0f14;
+      --bg2:      #13151c;
+      --bg3:      #1a1d27;
+      --border:   #242733;
+      --border2:  #2e3245;
+      --text:     #e8eaf0;
+      --muted:    #7b8099;
+      --accent:   #4ade80;
+      --accent2:  #22d3ee;
+      --amber:    #fbbf24;
+      --pink:     #f472b6;
+      --code-bg:  #0a0c10;
+      --nav-h:    60px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: rgba(13,15,20,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 2rem;
+      z-index: 100;
+      gap: 2rem;
+    }
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none;
+    }
+    .nav-logo-icon {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+    .nav-badge {
+      font-size: 11px; font-family: 'JetBrains Mono', monospace;
+      background: rgba(74,222,128,.12); color: var(--accent);
+      border: 1px solid rgba(74,222,128,.25);
+      padding: 2px 8px; border-radius: 999px;
+    }
+    .nav-links {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 1.5rem;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 14px;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+    .nav-btn {
+      padding: 7px 16px;
+      background: transparent;
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      color: var(--text); font-size: 13px;
+      cursor: pointer; text-decoration: none;
+      transition: border-color .2s, background .2s;
+    }
+    .nav-btn:hover { border-color: var(--accent); background: rgba(74,222,128,.05); color: var(--accent); }
+
+    /* ── LAYOUT ── */
+    .page { display: flex; padding-top: var(--nav-h); min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    aside {
+      width: 240px;
+      flex-shrink: 0;
+      position: sticky; top: var(--nav-h);
+      height: calc(100vh - var(--nav-h));
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      padding: 2rem 1.25rem;
+    }
+    aside::-webkit-scrollbar { width: 4px; }
+    aside::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .sidebar-section { margin-bottom: 1.75rem; }
+    .sidebar-label {
+      font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); font-weight: 500; margin-bottom: .6rem;
+      font-family: 'Syne', sans-serif;
+    }
+    .sidebar-item {
+      display: block; padding: 5px 10px;
+      color: var(--muted); text-decoration: none; font-size: 13.5px;
+      border-radius: 6px; transition: all .15s;
+    }
+    .sidebar-item:hover { color: var(--text); background: var(--bg3); }
+    .sidebar-item.active { color: var(--accent); background: rgba(74,222,128,.08); }
+
+    /* ── MAIN CONTENT ── */
+    main { flex: 1; min-width: 0; }
+    .content { max-width: 860px; margin: 0 auto; padding: 3rem 2.5rem 6rem; }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 4rem 0 3.5rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 3.5rem;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: 0; left: -60px; right: -60px; bottom: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(74,222,128,.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-eyebrow {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: var(--accent);
+      letter-spacing: .05em; margin-bottom: 1.2rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .hero-eyebrow::before { content: ''; display: inline-block; width: 20px; height: 1px; background: var(--accent); }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      font-weight: 800; line-height: 1.1; letter-spacing: -.02em;
+      margin-bottom: 1.25rem;
+      background: linear-gradient(135deg, #e8eaf0 20%, #7b8099 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .hero-desc {
+      font-size: 1.05rem; color: var(--muted); max-width: 540px;
+      line-height: 1.8; margin-bottom: 2rem;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 22px;
+      background: var(--accent); color: #0a1a0e;
+      font-weight: 600; font-size: 14px; border-radius: 8px;
+      text-decoration: none; transition: opacity .2s;
+    }
+    .btn-primary:hover { opacity: .88; }
+    .btn-secondary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 11px 22px;
+      background: transparent; color: var(--muted);
+      font-weight: 500; font-size: 14px; border-radius: 8px;
+      text-decoration: none; border: 1px solid var(--border2);
+      transition: color .2s, border-color .2s;
+    }
+    .btn-secondary:hover { color: var(--text); border-color: var(--border); }
+
+    /* ── INSTALL STRIP ── */
+    .install-strip {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: var(--code-bg); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 18px; margin-bottom: 2rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    }
+    .install-strip .dollar { color: var(--accent2); }
+    .install-strip span { color: var(--text); }
+    .install-strip .copy-hint { color: var(--muted); font-size: 11px; margin-left: 8px; cursor: pointer; transition: color .2s; }
+    .install-strip .copy-hint:hover { color: var(--text); }
+
+    /* ── SECTION HEADERS ── */
+    h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em;
+      color: var(--text); margin-bottom: .5rem;
+      scroll-margin-top: 80px;
+    }
+    .section-lead { color: var(--muted); margin-bottom: 2rem; font-size: .95rem; }
+
+    /* ── FEATURE GRID ── */
+    .feat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 3.5rem;
+    }
+    .feat-card {
+      background: var(--bg2);
+      padding: 1.4rem 1.5rem;
+      transition: background .2s;
+    }
+    .feat-card:hover { background: var(--bg3); }
+    .feat-icon {
+      width: 36px; height: 36px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; margin-bottom: 1rem;
+    }
+    .feat-title { font-weight: 600; font-size: .9rem; color: var(--text); margin-bottom: .3rem; }
+    .feat-desc { font-size: .82rem; color: var(--muted); line-height: 1.55; }
+
+    /* ── CODE BLOCK ── */
+    .code-wrap {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .code-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,.02);
+    }
+    .code-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .code-filename {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; color: var(--muted);
+      margin-left: 4px;
+    }
+    .code-tag {
+      margin-left: auto;
+      font-size: 10px; font-family: 'JetBrains Mono', monospace;
+      background: rgba(74,222,128,.1); color: var(--accent);
+      padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(74,222,128,.2);
+    }
+    pre {
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    pre::-webkit-scrollbar { height: 4px; }
+    pre::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .kw   { color: #c792ea; }
+    .str  { color: #a5e3a7; }
+    .cmt  { color: #546e7a; font-style: italic; }
+    .fn   { color: #82aaff; }
+    .num  { color: #f78c6c; }
+    .op   { color: var(--accent2); }
+    .route-get  { color: var(--accent); }
+    .route-post { color: var(--amber); }
+    .route-arrow { color: var(--muted); }
+    .route-ctrl { color: var(--accent2); }
+
+    /* ── STRUCTURE GRID ── */
+    .struct-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+      margin-bottom: 3.5rem;
+    }
+    .struct-item {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex; align-items: flex-start; gap: 10px;
+      transition: border-color .2s;
+    }
+    .struct-item:hover { border-color: var(--border2); }
+    .struct-folder {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px; font-weight: 500;
+      color: var(--amber);
+    }
+    .struct-desc { font-size: 12px; color: var(--muted); line-height: 1.4; margin-top: 2px; }
+
+    /* ── STACK BADGES ── */
+    .badge-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 3.5rem; }
+    .badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 5px 12px; border-radius: 6px;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      background: var(--bg2);
+    }
+
+    /* ── CALLOUT ── */
+    .callout {
+      display: flex; gap: 12px;
+      background: rgba(74,222,128,.06);
+      border: 1px solid rgba(74,222,128,.18);
+      border-radius: 10px; padding: 1rem 1.25rem;
+      margin-bottom: 3.5rem; font-size: .9rem;
+    }
+    .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout p { color: var(--muted); }
+    .callout strong { color: var(--text); }
+
+    /* ── DIVIDER ── */
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+    /* ── RIGHT TOC ── */
+    .toc-aside {
+      width: 200px; flex-shrink: 0;
+      position: sticky; top: var(--nav-h);
+      height: calc(100vh - var(--nav-h));
+      overflow-y: auto;
+      padding: 2.5rem 1.5rem;
+    }
+    .toc-label {
+      font-size: 10px; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted);
+      font-weight: 500; margin-bottom: .8rem;
+      font-family: 'Syne', sans-serif;
+    }
+    .toc-item {
+      display: block; font-size: 12.5px;
+      color: var(--muted); text-decoration: none;
+      padding: 3px 0; transition: color .15s;
+    }
+    .toc-item:hover { color: var(--text); }
+
+    @media (max-width: 900px) {
+      aside, .toc-aside { display: none; }
+      .content { padding: 2rem 1.25rem 4rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-icon">⚙</div>
+    Laracol
+  </a>
+  <span class="nav-badge">v1.0</span>
+  <ul class="nav-links">
+    <li><a href="docs/README.md">Docs</a></li>
+    <li><a href="docs/FRAMEWORK.md">Referência</a></li>
+    <li><a href="docs/CRUD.md">CRUD Guide</a></li>
+    <li><a href="/api/health" class="nav-btn">API Health ↗</a></li>
+  </ul>
+</nav>
+
+<div class="page">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <div class="sidebar-section">
+      <p class="sidebar-label">Primeiros Passos</p>
+      <a href="#inicio" class="sidebar-item active">Introdução</a>
+      <a href="#instalacao" class="sidebar-item">Instalação</a>
+      <a href="#estrutura" class="sidebar-item">Estrutura</a>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-label">Conceitos</p>
+      <a href="#roteamento" class="sidebar-item">Roteamento</a>
+      <a href="#controllers" class="sidebar-item">Controllers</a>
+      <a href="#models" class="sidebar-item">Models</a>
+      <a href="#middleware" class="sidebar-item">Middleware</a>
+    </div>
+    <div class="sidebar-section">
+      <p class="sidebar-label">Avançado</p>
+      <a href="#stack" class="sidebar-item">Stack Tecnológico</a>
+      <a href="#exemplos" class="sidebar-item">Exemplos</a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <div class="content">
+
+      <!-- HERO -->
+      <section class="hero" id="inicio">
+        <div class="hero-eyebrow">Framework Web em COBOL</div>
+        <h1>Laracol</h1>
+        <p class="hero-desc">
+          Uma arquitetura web moderna trazida ao COBOL. Roteamento, MVC, Middleware e Models
+          com a robustez que a linguagem já oferece há décadas.
+        </p>
+
+        <div class="install-strip">
+          <span class="dollar">$</span>
+          <span>make install &amp;&amp; make serve</span>
+          <span class="copy-hint" title="Copiar">⌘ copiar</span>
+        </div>
+
+        <div class="hero-actions">
+          <a href="#instalacao" class="btn-primary">
+            Começar agora →
+          </a>
+          <a href="#exemplos" class="btn-secondary">
+            Ver exemplos
+          </a>
+        </div>
+      </section>
+
+      <!-- O QUE É -->
+      <h2 id="instalacao">O que é o Laracol?</h2>
+      <p class="section-lead">
+        Laracol é uma adaptação do Laravel para COBOL baseada em três princípios: Simplicidade, Produtividade e Modernidade.
+        Padrões de frameworks web modernos implementados em GnuCOBOL com suporte a MVC, Roteamento REST, Middleware e Models.
+      </p>
+
+      <div class="feat-grid">
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(74,222,128,.12);">📂</div>
+          <div class="feat-title">Estrutura MVC</div>
+          <div class="feat-desc">Separação clara de responsabilidades com Controllers, Models e Views organizados.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(34,211,238,.12);">⇄</div>
+          <div class="feat-title">Roteamento Flexível</div>
+          <div class="feat-desc">Defina endpoints GET, POST, PUT e DELETE com mapeamento direto para Controllers.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(251,191,36,.12);">🛡</div>
+          <div class="feat-title">Middleware</div>
+          <div class="feat-desc">Autenticação, validação e CORS. Processe requisições antes dos Controllers.</div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-icon" style="background:rgba(244,114,182,.12);">🗄</div>
+          <div class="feat-title">Models & Data</div>
+          <div class="feat-desc">Padrão Active Record para CRUD. Suporte a banco de dados, migrations e seeders.</div>
+        </div>
+      </div>
+
+      <!-- CALLOUT -->
+      <div class="callout">
+        <div class="callout-icon">💡</div>
+        <div>
+          <p><strong>Arquitetura Baseada em CGI:</strong> Laracol implementa o padrão MVC sobre COBOL com CGI (Common Gateway Interface), oferecendo uma forma moderna de construir APIs REST e aplicações web mantendo a robustez do COBOL. Veja mais em <a href="docs/FRAMEWORK.md" style="color:var(--accent);text-decoration:none;">docs/FRAMEWORK.md</a>.</p>
+        </div>
+      </div>
+
+      <hr class="section-divider" />
+
+      <!-- ESTRUTURA -->
+      <h2 id="estrutura">Estrutura do Projeto</h2>
+      <p class="section-lead">Siga a estrutura MVC adaptada para COBOL. Veja detalhes completos em cada diretório.</p>
+
+      <div class="struct-grid">
+        <div class="struct-item">
+          <div>
+            <div class="struct-folder">app/</div>
+            <div class="struct-desc">Controllers, Models, Services</div>
+          </div>
+        </div>
+        <div class="struct-item">
+          <div>
+            <div class="struct-folder">config/</div>
+            <div class="struct-desc">Configurações da aplicação</div>
+          </div>
+        </div>
+        <div class="struct-item">
+          <div>
+            <div class="struct-folder">routes/</div>
+            <div class="struct-desc">Definição de endpoints</div>
+          </div>
+        </div>
+        <div class="struct-item">
+          <div>
+            <div class="struct-folder">public/</div>
+            <div class="struct-desc">Ponto de entrada público</div>
+          </div>
+        </div>
+        <div class="struct-item">
+          <div>
+            <div class="struct-folder">resources/</div>
+            <div class="struct-desc">Views e templates</div>
+          </div>
+        </div>
+        <div class="struct-item">
+          <div>
+            <div class="struct-folder">storage/</div>
+            <div class="struct-desc">Logs e arquivos gerados</div>
+          </div>
+        </div>
+        <div class="struct-item">
+          <div>
+            <div class="struct-folder">database/</div>
+            <div class="struct-desc">Migrations e seeders</div>
+          </div>
+        </div>
+        <div class="struct-item">
+          <div>
+            <div class="struct-folder">tests/</div>
+            <div class="struct-desc">Testes automatizados</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider" />
+      <!-- INSTALAÇÃO REAL -->
+      <h2>Como Começar</h2>
+      <p class=\"section-lead\">
+        Siga os passos abaixo para instalar e configurar o Laracol. Para documentação completa, consulte:
+      </p>
+      <div style=\"margin-bottom:2rem;\">
+        <ul style=\"list-style:none;padding:0;\">
+          <li style=\"margin-bottom:.8rem;\"><strong>📖 <a href=\"docs/INSTALL.md\" style=\"color:var(--accent);text-decoration:none;\">INSTALL.md</a></strong> - Guia completo de instalação (pré-requisitos, compilador, setup)</li>
+          <li style=\"margin-bottom:.8rem;\"><strong>🛠️ <a href=\"docs/CRUD.md\" style=\"color:var(--accent);text-decoration:none;\">CRUD.md</a></strong> - Tutorial prático: crie seu primeiro endpoint REST em 30 min</li>
+          <li style=\"margin-bottom:.8rem;\"><strong>🏗️ <a href=\"docs/FRAMEWORK.md\" style=\"color:var(--accent);text-decoration:none;\">FRAMEWORK.md</a></strong> - Entenda a arquitetura MVC, padrões e design do Laracol</li>
+        </ul>
+      </div>
+
+      <hr class=\"section-divider\" />
+      <!-- EXEMPLOS -->
+      <h2 id="exemplos">Exemplos de Código</h2>
+      <p class="section-lead">Veja como Laracol traduz padrões web modernos para COBOL. Para exemplos completos, consulte o CRUD guide em <strong>docs/CRUD.md</strong>.</p>
+
+      <!-- Controller -->
+      <h3 id="controllers" style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:600;color:var(--text);margin-bottom:.75rem;scroll-margin-top:80px;">Controller Simples</h3>
+      <div class="code-wrap">
+        <div class="code-header">
+          <div class="code-dot" style="background:#ff5f57;"></div>
+          <div class="code-dot" style="background:#febc2e;"></div>
+          <div class="code-dot" style="background:#28c840;"></div>
+          <span class="code-filename">app/Controllers/WelcomeController.cob</span>
+          <span class="code-tag">Controller</span>
+        </div>
+        <pre><span class="kw">IDENTIFICATION DIVISION.</span>
+<span class="kw">PROGRAM-ID.</span> <span class="fn">WelcomeController</span>.
+
+<span class="kw">CLASS-ID.</span> <span class="fn">WelcomeController</span> <span class="op">Extends</span> <span class="fn">BaseController</span>.
+
+<span class="cmt">* Responde a GET /welcome</span>
+<span class="kw">METHOD-ID.</span> <span class="fn">index</span> <span class="op">OVERRIDE.</span>
+    <span class="kw">DISPLAY</span> <span class="str">"Bem-vindo ao Laracol!"</span>
+    <span class="kw">GOBACK.</span>
+<span class="kw">END METHOD.</span>
+
+<span class="cmt">* Renderiza view de boas-vindas</span>
+<span class="kw">METHOD-ID.</span> <span class="fn">show</span> <span class="op">OVERRIDE.</span>
+    <span class="kw">MOVE</span> <span class="str">"welcome.index"</span> <span class="op">TO</span> WS-VIEW-NAME
+    <span class="kw">PERFORM</span> <span class="fn">RENDER-VIEW</span>
+    <span class="kw">GOBACK.</span>
+<span class="kw">END METHOD.</span>
+
+<span class="kw">END CLASS</span> <span class="fn">WelcomeController</span>.</pre>
+      </div>
+
+      <!-- Roteamento -->
+      <h3 id="roteamento" style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:600;color:var(--text);margin-bottom:.75rem;scroll-margin-top:80px;">Definição de Rotas REST</h3>
+      <p style="font-size:.9rem;color:var(--muted);margin-bottom:1rem;">As rotas são definidas em COBOL e mapeiam URLs diretamente para métodos de Controllers.</p>
+      <div class="code-wrap">
+        <div class="code-header">
+          <div class="code-dot" style="background:#ff5f57;"></div>
+          <div class="code-dot" style="background:#febc2e;"></div>
+          <div class="code-dot" style="background:#28c840;"></div>
+          <span class="code-filename">routes/api.cbl</span>
+          <span class="code-tag">Routing</span>
+        </div>
+        <pre><span class="cmt">* Rotas REST mapeadas para Controllers</span>
+<span class="cmt">* Arquivo: routes/api.cbl</span>
+<span class="cmt"></span>
+<span class="route-get">GET</span>   <span class="op">/api/users         </span>  <span class="route-arrow">→</span>  <span class="route-ctrl">UserController::index</span>
+<span class="route-post">POST</span>  <span class="op">/api/users         </span>  <span class="route-arrow">→</span>  <span class="route-ctrl">UserController::store</span>
+<span class="route-get">GET</span>   <span class="op">/api/users/:id     </span>  <span class="route-arrow">→</span>  <span class="route-ctrl">UserController::show</span>
+<span class="route-post">PUT</span>   <span class="op">/api/users/:id     </span>  <span class="route-arrow">→</span>  <span class="route-ctrl">UserController::update</span>
+<span class="route-post">DELETE</span> <span class="op">/api/users/:id    </span>  <span class="route-arrow">→</span>  <span class="route-ctrl">UserController::destroy</span></pre>
+      </div>
+
+      <!-- Middleware -->
+      <h3 id="middleware" style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:600;color:var(--text);margin-bottom:.75rem;scroll-margin-top:80px;">Middleware de Autenticação</h3>
+      <div class="code-wrap">
+        <div class="code-header">
+          <div class="code-dot" style="background:#ff5f57;"></div>
+          <div class="code-dot" style="background:#febc2e;"></div>
+          <div class="code-dot" style="background:#28c840;"></div>
+          <span class="code-filename">app/Middleware/AuthMiddleware.cob</span>
+          <span class="code-tag">Middleware</span>
+        </div>
+        <pre><span class="kw">METHOD-ID.</span> <span class="fn">handle</span> <span class="op">OVERRIDE.</span>
+    <span class="kw">EVALUATE</span> WS-AUTH-TOKEN
+        <span class="kw">WHEN</span> <span class="str">SPACES</span>
+            <span class="kw">MOVE</span> <span class="num">401</span> <span class="op">TO</span> WS-HTTP-STATUS
+            <span class="kw">MOVE</span> <span class="str">"Unauthorized"</span> <span class="op">TO</span> WS-RESPONSE-BODY
+            <span class="kw">PERFORM</span> <span class="fn">ABORT-REQUEST</span>
+        <span class="kw">WHEN OTHER</span>
+            <span class="kw">PERFORM</span> <span class="fn">VALIDATE-TOKEN</span>
+            <span class="kw">PERFORM</span> <span class="fn">NEXT-MIDDLEWARE</span>
+    <span class="kw">END-EVALUATE.</span>
+    <span class="kw">GOBACK.</span>
+<span class="kw">END METHOD.</span></pre>
+      </div>
+
+      <hr class="section-divider" />
+
+      <!-- STACK -->
+      <h2 id="stack">Stack Tecnológico</h2>
+      <p class="section-lead">Tecnologias que sustentam o framework.</p>
+      <div class="badge-row">
+        <span class="badge">COBOL</span>
+        <span class="badge">GnuCOBOL</span>
+        <span class="badge">CGI</span>
+        <span class="badge">HTTP / REST</span>
+        <span class="badge">MVC Pattern</span>
+        <span class="badge">SQL / Database</span>
+        <span class="badge">Middleware</span>
+        <span class="badge">OOP COBOL</span>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- TOC RIGHT -->
+  <aside class="toc-aside">
+    <p class="toc-label">Nesta página</p>
+    <a href="#inicio" class="toc-item">Introdução</a>
+    <a href="#instalacao" class="toc-item">O que é</a>
+    <a href="#estrutura" class="toc-item">Estrutura</a>
+    <a href="#exemplos" class="toc-item">Como Começar</a>
+    <a href="#exemplos" class="toc-item">Exemplos</a>
+    <a href="#controllers" class="toc-item">→ Controller</a>
+    <a href="#roteamento" class="toc-item">→ Roteamento</a>
+    <a href="#middleware" class="toc-item">→ Middleware</a>
+    <a href="#stack" class="toc-item">Stack</a>
+  </aside>
+
+</div>
+
+<script>
+  document.querySelector('.copy-hint').addEventListener('click', function() {
+    navigator.clipboard.writeText('make install && make serve');
+    this.textContent = '✓ copiado';
+    setTimeout(() => this.textContent = '⌘ copiar', 1800);
+  });
+</script>
+</body>
+</html>
